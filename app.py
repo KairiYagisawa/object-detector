@@ -82,4 +82,4 @@ if uploaded_file is not None:
         cls_id = int(box.cls[0])
         conf = float(box.conf[0])
         label = results[0].names[cls_id]
-        st.write(f"- {label}（確度: {conf:.2f}）")
+        st.write(f"- {label}（確度: {conf * 100:.1f}%）")
