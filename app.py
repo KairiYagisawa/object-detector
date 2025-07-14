@@ -59,7 +59,10 @@ if uploaded_file is not None:
         # 四角枠とテキストを描画
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
         cv2.putText(img, text, (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 255), 3)
+        
+
+        
 
     # 結果表示
     st.image(img, caption="🔍 検出結果（信頼度：パーセント表示）", channels="BGR")
