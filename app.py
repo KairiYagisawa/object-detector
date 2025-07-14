@@ -4,82 +4,70 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 
-# 🌈 ページの基本設定
+# モデルの読み込み
+model = YOLO("yolov8n.pt")
+
+# ページの基本設定
 st.set_page_config(
     page_title="📸 物体検出アプリ",
     page_icon="🐶",
     layout="centered",
+    initial_sidebar_state="auto"
 )
 
-# 💅 カスタムCSS（背景色、フォント、タイトル色）
+# CSSスタイル調整
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap');
-
-    html, body, [class*="css"]  {
-        font-family: 'Zen Maru Gothic', sans-serif;
-        background-color: #fff7f0;
-        color: #3e3e3e;
+    .main {
+        background-color: #f9f4ef;
+        padding: 20px;
+        border-radius: 10px;
     }
-
     h1 {
+        color: #6c5ce7;
+        font-size: 36px;
         text-align: center;
-        color: #a55eea;
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-
-    .stButton > button {
-        background-color: #ffadad;
-        color: white;
-        font-weight: bold;
-        border-radius: 12px;
-        padding: 10px 24px;
-        border: none;
-    }
-
-    .stButton > button:hover {
-        background-color: #ff7575;
-    }
-
-    .stFileUploader > div > div {
-        background-color: #fff0f5;
-        border-radius: 12px;
-        padding: 12px;
-        border: 2px dashed #ffa5c9;
-    }
-
-    .stFileUploader label {
-        font-weight: bold;
-        color: #d63384;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 🐾 タイトル表示
-st.title("物体検出")
-st.caption("画像をアップロードすると物体を検出するよ")
+st.title("🎯 物体検出アプリ")
 
-# 🔍 モデルの読み込み
-model = YOLO("yolov8n.pt")
+# ファイルアップローダー
+uploaded_file = st.file_uploader("📷 画像をアップロードしてください", type=["jpg", "jpeg", "png"])
 
-# 📁 アップロードUI
-uploaded_file = st.file_uploader("画像をアップロードしてください", type=["jpg", "png", "jpeg"])
-
-# 🎯 推論処理
 if uploaded_file is not None:
+    # 画像の読み込み
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, 1)
+
+    # YOLO推論
     results = model(img)
-    result_img = results[0].plot()
+    boxes = results[0].boxes
+    names = results[0].names
 
-    # 📷 結果画像の表示
-    st.image(result_img, caption="🔍 検出結果", channels="BGR")
+    # 手動で枠とラベル（％）を描画
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        conf = float(box.conf[0])
+        cls_id = int(box.cls[0])
+        label = names[cls_id]
 
-    # 📋 ラベル一覧の出力
-    st.subheader("📌 検出されたオブジェクト")
-    for box in results[0].boxes:
+        # 表示用のラベル（信頼度をパーセントで）
+        text = f"{label} {conf * 100:.1f}%"
+
+        # 四角枠とテキストを描画
+        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
+        cv2.putText(img, text, (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 255), 2)
+
+    # 結果表示
+    st.image(img, caption="🔍 検出結果（信頼度：パーセント表示）", channels="BGR")
+
+    # オブジェクト一覧
+    st.subheader("📋 検出されたオブジェクト")
+    for box in boxes:
         cls_id = int(box.cls[0])
         conf = float(box.conf[0])
-        label = results[0].names[cls_id]
-        st.write(f"- {label}（確度: {conf * 100:.1f}%）")
+        label = names[cls_id]
+        st.write(f"- {label}（信頼度: {conf * 100:.1f}％）")
